@@ -23,17 +23,23 @@ if __name__ == '__main__':
                 df['date'] = pd.to_datetime(date_dir.name).strftime('%Y-%m-%d')
                 df['Location'] = loc_dir.name
                 res = pd.concat([res, df], ignore_index = True)
-    # unreasonable values that could be in centimeters
-    res.loc[:, 'depth'] = res.loc[:, 'depth'].astype(float)
-    # res.loc[res.depth > 5, 'depth'] = res.loc[res.depth > 5, 'depth']/100
-    # remove all other outliers ( > 10 meters) (n = 1) and Longitude > 1000 (n = 27)
-    res = res.loc[res.depth < 1000]
-    res = res.loc[res.geometry.y < 1000]
+                    
     # some observers in Boise River switched the lat and lon columns
     res.loc[res.geometry.y < 0, 'geometry'] = res[res.geometry.y < 0].geometry.map(lambda polygon: shapely.ops.transform(lambda x, y: (y, x), polygon))
+                    
+    # ensure correct dtype for depth data
+    res.loc[:, 'depth'] = res.loc[:, 'depth'].astype(float)
+          
+    # remove outliers - depth > 10 meters (n = 1)
+    res = res.loc[res.depth < 1000]
+    
+    # remove outlier - Longitude > 1000 (n = 27)
+    res = res.loc[res.geometry.y < 1000]
+
     # some observers in Boise River put latitude in depth and doubled longitude (n = 2)
     res = res.loc[res.geometry.y > 0]
-    # some observers in Boise River miss placed commas (n = 1)
+
+    # some observers in Boise River misplaced commas (n = 1)
     res = res[res.geometry.x < -30]
 
     res.to_csv('snowex_depths.csv')
